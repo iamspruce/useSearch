@@ -1,5 +1,5 @@
 {
-  "name": "usesearch",
+  "name": "use-search-hook",
   "version": "1.0.0",
   "description": "A modular, extensible search and filter hook for React.",
   "author": "Spruce Emmanuel",

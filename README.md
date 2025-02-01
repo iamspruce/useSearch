@@ -60,11 +60,17 @@ Whether you're building an interactive search UI or just need a solid search too
 
 ---
 
-## **Installation**
+## Installation
+
+Getting started is simple! Install `useSearch` using npm or yarn:
 
 ```bash
-npm install useSearch
+npm install use-search-hook
+# or
+yarn add use-search-hook
 ```
+
+Once installed, you’re ready to plug it into your project.
 
 ---
 
@@ -75,7 +81,7 @@ npm install useSearch
 Search an array of objects with debouncing (default: 150ms):
 
 ```tsx
-import { useSearch, search } from "use-search";
+import { useSearch, search } from "use-search-hook";
 
 const ProductList = ({ products }) => {
   const [query, setQuery] = useState("");
@@ -118,24 +124,166 @@ useSearch(
 
 ### 2. **Fuzzy Search**
 
-Use built-in algorithms or provide your own:
+Fuzzy search helps find results that are **close but not exact** matches, making it useful for handling typos, variations in spelling, and user input flexibility. This library includes **three built-in fuzzy search algorithms**, and you can also provide your own custom algorithm.
+
+### **Choosing the Right Algorithm**
+
+Each algorithm has different strengths and is suited for specific situations:
+
+| Algorithm                | Best for...                                                                                          | Notes                                                                                |
+| ------------------------ | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| **Levenshtein Distance** | Handling typos and small edits (e.g., "color" vs. "colour")                                          | Measures how many insertions, deletions, or substitutions are needed to match words. |
+| **Jaro-Winkler**         | Matching short names, fuzzy user searches, and correcting transpositions (e.g., "Brian" vs. "Brain") | Gives extra weight to common prefixes.                                               |
+| **N-Gram Similarity**    | Partial word matching and autocomplete-like suggestions (e.g., "prog" matching "programming")        | Breaks words into overlapping chunks and compares them.                              |
+
+---
+
+## **1. Levenshtein Distance**
+
+The **Levenshtein Distance** algorithm measures the number of **insertions, deletions, or substitutions** needed to transform one word into another. The fewer edits required, the more similar the words are.
+
+✅ **Best for:** Correcting typos and detecting near matches.
+
+🔹 **Example:**
+
+- `"hello"` → `"helo"` → **1 edit (deletion)**
+- `"kitten"` → `"sitting"` → **3 edits (substitutions, insertions)**
+
+**How it works:**
+
+1. Convert both the **value** and **query** to lowercase.
+2. Compute the **Levenshtein distance**.
+3. Normalize the score to a range between `0` and `1`, where `1` means an exact match.
 
 ```ts
-search({
-  match: "fuzzy",
-  fuzzyOptions: {
-    threshold: 0.4, // Match similarity threshold (0-1)
-    fuzzySearchFn: yourCustomAlgorithm, // Optional
-  },
-});
+export const levenshteinFuzzySearch = (
+  value: string,
+  query: string
+): number => {
+  const valueLength = value.length;
+  const queryLength = query.length;
+
+  if (queryLength === 0) return 1; // Empty query matches everything
+
+  const distance = levenshteinDistance(
+    value.toLowerCase(),
+    query.toLowerCase()
+  );
+  const maxDistance = Math.max(valueLength, queryLength);
+  return 1 - distance / maxDistance;
+};
 ```
+
+📌 **When to use:**
+
+- Handling user typos (`"accommodation"` vs. `"acomodation"`)
+- Searching for product names with minor spelling errors
+
+---
+
+## **2. Jaro-Winkler Distance**
+
+The **Jaro-Winkler algorithm** improves upon **Jaro Distance** by giving more weight to words that **start with the same characters**. It’s useful for detecting common **misspellings, transpositions, and short name variations**.
+
+✅ **Best for:** Matching names and short words where small mistakes happen often.
+
+🔹 **Example:**
+
+- `"marhta"` → `"martha"` (letters swapped, but still very similar)
+- `"Dwayne"` → `"Duane"` (similar sound and prefix)
+
+**How it works:**
+
+1. Finds matching characters within a certain range.
+2. Counts **transpositions** (swapped letters).
+3. Gives extra weight if the words share a **common prefix**.
+
+```ts
+export const jaroWinklerFuzzySearch = (
+  value: string,
+  query: string
+): number => {
+  return jaroWinklerDistance(value.toLowerCase(), query.toLowerCase());
+};
+```
+
+📌 **When to use:**
+
+- Matching **people’s names** (`"Johnathan"` vs. `"Jonathan"`)
+- Handling **swapped letters** (`"Brian"` vs. `"Brain"`)
+
+---
+
+## **3. N-Gram Similarity**
+
+The **N-Gram approach** breaks words into **overlapping letter groups (n-grams)** and compares the overlap between two words. It’s useful for **autocomplete features and partial matches**.
+
+✅ **Best for:** Matching **partial words and autocomplete** suggestions.
+
+🔹 **Example:**  
+Using **bigrams (2-letter n-grams)**:
+
+- `"hello"` → `["he", "el", "ll", "lo"]`
+- `"help"` → `["he", "el", "lp"]`
+
+**How it works:**
+
+1. Convert both **value** and **query** to lowercase.
+2. Split words into **n-grams** (default: bigrams).
+3. Count how many n-grams overlap.
+4. Compute a similarity score between `0` and `1`.
+
+```ts
+export const nGramFuzzySearch = (value: string, query: string): number => {
+  const n = 2; // Bigram by default
+  const valueGrams = generateNGrams(value.toLowerCase(), n);
+  const queryGrams = generateNGrams(query.toLowerCase(), n);
+
+  const intersection = valueGrams.filter((gram) => queryGrams.includes(gram));
+  return intersection.length / Math.max(valueGrams.length, queryGrams.length);
+};
+```
+
+📌 **When to use:**
+
+- **Autocomplete search** (e.g., `"pro"` matching `"programming"`)
+- **Matching partial words** (e.g., `"photo"` matching `"photography"`)
+
+---
+
+## **Using a Custom Algorithm**
+
+If none of these algorithms fit your needs, you can **provide your own custom fuzzy search function**. Your function should take two strings (`value` and `query`) and return a **similarity score between 0 and 1**.
+
+🔹 **Example Custom Function:**
+
+```ts
+const customFuzzySearch = (value: string, query: string): number => {
+  // Example: simple case-insensitive substring match
+  return value.toLowerCase().includes(query.toLowerCase()) ? 1 : 0;
+};
+```
+
+To use your custom function, pass it to the search system like this:
+
+```ts
+useSearch(data, query, { fuzzySearch: customFuzzySearch });
+```
+
+Each fuzzy search algorithm has its strengths:
+
+- **Levenshtein Distance** → Best for fixing **typos and small edits**.
+- **Jaro-Winkler Distance** → Best for **matching names and detecting transpositions**.
+- **N-Gram Similarity** → Best for **autocomplete and partial matches**.
+
+You can **choose the right algorithm** based on your use case, or even provide **your own** if needed! 🚀
 
 ### 3. **Filtering**
 
 Apply conditional logic to refine results:
 
 ```ts
-import { filter } from "use-search";
+import { filter } from "use-search-hook";
 
 filter({
   conditions: [
@@ -474,29 +622,27 @@ Pass the debounce time (in milliseconds) as the third argument to `useSearch`.
 
 ## **Roadmap**
 
-- [ ] Add grouping functionality.
-- [ ] Improve TypeScript type inference.
-- [ ] Add support for async data sources.
+- [x] Add grouping functionality.
+- [x] Improve TypeScript type inference.
 
 ---
 
 ## **Contributing**
 
 Found a bug or want to improve the hook?  
-Contribute on [GitHub](https://github.com/your-repo).
+Contribute on [GitHub](https://github.com/iamspruce/useSearch).
 
 ---
 
 ## **Changelog**
 
-See the [Changelog](https://github.com/your-repo/changelog) for updates and release notes.
+See the [Changelog](https://github.com/iamspruce/useSearch/changelog) for updates and release notes.
 
 ---
 
 ## **Community & Support**
 
-- [GitHub Issues](https://github.com/your-repo/issues)
-- [Discord Channel](https://discord.gg/your-link)
+- [GitHub Issues](https://github.com/iamspruce/useSearch/issues)
 
 ---
 

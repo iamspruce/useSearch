@@ -1,4 +1,3 @@
-import React from "react";
 import useSearch from "../src/hooks/useSearch";
 import { SearchFeature } from "../src/types";
 
