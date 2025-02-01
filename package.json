@@ -48,12 +48,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/usesearch.git"
+    "url": "https://github.com/iamspruce/useSearch.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/usesearch/issues"
+    "url": "https://github.com/iamspruce/useSearch/issues"
   },
-  "homepage": "https://github.com/yourusername/usesearch#readme",
+  "homepage": "https://github.com/iamspruce/useSearch#readme",
   "keywords": [
     "react",
     "search",

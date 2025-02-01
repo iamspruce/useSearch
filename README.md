@@ -49,8 +49,6 @@ Whether you're building an interactive search UI or just need a solid search too
 
 ---
 
-Let me know if you’d like any tweaks! 🚀earch is designed to keep things simple, fast, and scalable.
-
 **Key Features**:
 
 - **Debounced search** (customizable delay)
@@ -199,75 +197,206 @@ The hook gracefully handles edge cases:
 
 ---
 
+Here’s the updated API documentation with the new features included in the same conversational and structured style:
+
+---
+
 ## **API Reference**
 
 ### **`useSearch`**
+
+The `useSearch` hook is your go-to solution for searching, filtering, sorting, grouping, and paginating data effortlessly.
+
+#### **Usage**
 
 ```ts
 function useSearch<T>(
   data: T | T[],
   query: string,
-  debounceTimeOrFeature?: number | SearchFeature<T>,
+  debounceTime?: number,
   ...features: SearchFeature<T>[]
 ): T[];
 ```
 
-| Parameter               | Type              | Description                           |
-| ----------------------- | ----------------- | ------------------------------------- | --------------------------------------- |
-| `data`                  | `T                | T[]`                                  | Data to search (single object or array) |
-| `query`                 | `string`          | Search query string                   |
-| `debounceTimeOrFeature` | `number           | Feature`                              | Debounce time (ms) or first feature     |
-| `features`              | `SearchFeature[]` | Search/filter/sort/paginate functions |
+#### **Parameters**
+
+| Parameter      | Type                 | Description                                                      |
+| -------------- | -------------------- | ---------------------------------------------------------------- |
+| `data`         | `T` \| `T[]`         | The data you want to search (single object or an array).         |
+| `query`        | `string`             | The search term entered by the user.                             |
+| `debounceTime` | `number`             | Debounce time (in milliseconds)                                  |
+| `features`     | `SearchFeature<T>[]` | Additional search, filter, sort, group, or pagination functions. |
 
 ---
 
-### **Features**
+## **Features**
 
-#### **`search(options: SearchOptions)`**
+### **Search: `search(options: SearchOptions)`**
 
-| Option                    | Type           | Default   | Description                              |
-| ------------------------- | -------------- | --------- | ---------------------------------------- | --------------------------- |
-| `match`                   | `MatchStrategy | fn`       | `"contains"`                             | Strategy or custom function |
-| `fields`                  | `string        | string[]` | All keys                                 | Fields to search            |
-| `caseSensitive`           | `boolean`      | `false`   | Case-sensitive matching                  |
-| `objectToStringThreshold` | `number`       | `10`      | Max nested keys before string conversion |
+Fine-tune how the search works with custom match strategies, case sensitivity, and field selection.
+
+| Option                    | Type                                                | Default      | Description                                                                            |
+| ------------------------- | --------------------------------------------------- | ------------ | -------------------------------------------------------------------------------------- |
+| `match`                   | `"contains"` \| `"startsWith"` \| `"exact"` \| `fn` | `"contains"` | Defines how search terms match data. Use a built-in strategy or a custom function.     |
+| `fields`                  | `string[]`                                          | `All keys`   | Specifies which fields to search within.                                               |
+| `caseSensitive`           | `boolean`                                           | `false`      | Whether the search should distinguish between uppercase and lowercase letters.         |
+| `objectToStringThreshold` | `number`                                            | `10`         | Converts objects with more than this number of nested keys into strings for searching. |
 
 ---
 
-#### **`filter(options: FilterOptions)`**
+### **Filtering: `filter(options: FilterOptions)`**
 
-| Option                 | Type          | Default      | Description                                        |
-| ---------------------- | ------------- | ------------ | -------------------------------------------------- | -------- | --------------------- |
-| `conditions`           | `Condition[]` | **Required** | Array of conditions (`field`, `operator`, `value`) |
-| `caseSensitive`        | `boolean`     | `false`      | Case-sensitive comparisons                         |
-| `missingFieldBehavior` | `"skip"       | "exclude"    | "throw"`                                           | `"skip"` | Handle missing fields |
+Narrow down search results by applying conditions like “greater than,” “equals,” or “contains.”
+
+| Option                 | Type                                 | Default      | Description                                                                                 |
+| ---------------------- | ------------------------------------ | ------------ | ------------------------------------------------------------------------------------------- |
+| `conditions`           | `Condition[]`                        | **Required** | An array of conditions that specify filtering rules (`field`, `operator`, `value`).         |
+| `caseSensitive`        | `boolean`                            | `false`      | Determines if comparisons should be case-sensitive.                                         |
+| `missingFieldBehavior` | `"skip"` \| `"exclude"` \| `"throw"` | `"skip"`     | Defines what happens when a field is missing. Skip it, exclude the item, or throw an error. |
+
+---
+
+### **Sorting: `sort(options: SortOptions)`**
+
+Sorts your data based on a specific field, either in ascending or descending order.
+
+| Option       | Type                | Default      | Description                                                         |
+| ------------ | ------------------- | ------------ | ------------------------------------------------------------------- |
+| `field`      | `string`            | **Required** | The field used for sorting.                                         |
+| `order`      | `"asc"` \| `"desc"` | `"asc"`      | The order of sorting: ascending (`"asc"`) or descending (`"desc"`). |
+| `nullsFirst` | `boolean`           | `false`      | Whether to place `null` or `undefined` values first.                |
+
+---
+
+### **Grouping: `group(options: GroupOptions)`**
+
+Organizes data into groups based on a specific field. If a field is missing, items are placed under a default group.
+
+| Option            | Type     | Default      | Description                                                   |
+| ----------------- | -------- | ------------ | ------------------------------------------------------------- |
+| `field`           | `string` | **Required** | The field used for grouping data.                             |
+| `defaultGroupKey` | `string` | `"Other"`    | The default group name for items missing the specified field. |
+
+---
+
+### **Pagination: `paginate(options: PaginationOptions)`**
+
+Limits the number of items displayed at a time and allows users to navigate between pages.
+
+| Option     | Type     | Default | Description               |
+| ---------- | -------- | ------- | ------------------------- |
+| `pageSize` | `number` | `10`    | Number of items per page. |
+| `page`     | `number` | `1`     | The current page number.  |
 
 ---
 
 ## **Best Practices**
 
-### 1. **Memoize Features**
+### 1. **Understand React’s Re-Renders & Memoization**
 
-Prevent unnecessary re-renders by memoizing the features array:
+In React, every time a component re-renders, it **recreates arrays and objects** unless they are memoized. This means that even if two arrays have the same content, React will treat them as different because they have new memory references.
 
-```ts
-const features = useMemo(() => [
-  search({ fields: ['name'] }),
+For example, if you pass an **array of features** like this:
+
+```tsx
+const data = [...]; // Some array of items
+const results = useSearch(data, query, [
+  search({ fields: ["name"] }),
   filter({ conditions: [...] }),
-], []);
+]);
 ```
 
-### 2. **Optimize Large Datasets**
+React will **recreate** the array every time the component re-renders. Since `useSearch` sees a new array reference, it treats it as a different input, potentially triggering unnecessary recalculations.
 
-- Use `paginate()` to limit rendered results.
-- Avoid expensive custom logic in `match` functions.
+#### **How to Fix This? Memoize the Features Array**
 
-### 3. **Debounce Wisely**
+To prevent this, wrap the features in `useMemo()`, so they are only re-created when needed:
 
-Choose a debounce time based on your data size:
+```tsx
+const features = useMemo(() => [
+  search({ fields: ["name"] }),
+  filter({ conditions: [...] }),
+], []);
 
-- Small datasets: `150ms`
-- Large datasets: `300-500ms`
+const results = useSearch(data, query, ...features);
+```
+
+This way, `features` remains stable across renders, avoiding unnecessary updates.
+
+---
+
+### 2. **Memoize the Data Array (When Not Using `useState`)**
+
+If you are passing a static array as `data`, React may recreate the array on every render, even if the contents haven’t changed. This can also cause unnecessary recomputation inside `useSearch`.
+
+#### **Example of What to Avoid:**
+
+```tsx
+const results = useSearch(
+  [
+    { id: 1, name: "Alice" },
+    { id: 2, name: "Bob" },
+  ],
+  query,
+  ...features
+);
+```
+
+Every render creates a **new array reference**, even though the contents are the same!
+
+#### **How to Fix This? Use `useMemo()`**
+
+Instead, memoize the data array:
+
+```tsx
+const data = useMemo(
+  () => [
+    { id: 1, name: "Alice" },
+    { id: 2, name: "Bob" },
+  ],
+  []
+);
+
+const results = useSearch(data, query, ...features);
+```
+
+If your data is dynamic (e.g., fetched from an API), use `useState`:
+
+```tsx
+const [data, setData] = useState([]);
+
+useEffect(() => {
+  fetchData().then(setData);
+}, []);
+```
+
+This ensures that `data` is **only updated when new data is fetched** rather than being re-created every render.
+
+---
+
+### 3. **Optimize Large Datasets**
+
+When working with large datasets, you should:
+
+- **Use `paginate()`** to limit the number of items displayed at a time.
+- **Avoid expensive logic** inside custom `match` functions to keep searches fast.
+
+---
+
+### 4. **Debounce Wisely**
+
+Adding a debounce prevents rapid re-renders when users type quickly. Choose a debounce time based on your dataset size:
+
+- **Small datasets:** `150ms`
+- **Large datasets:** `300-500ms`
+
+Use `useSearch` with a debounce like this:
+
+```tsx
+const results = useSearch(data, query, 300, ...features);
+```
+
+This ensures that the search only updates after the user **stops typing for 300ms**, improving performance.
 
 ---
 
@@ -328,16 +457,6 @@ test("filters products by name", () => {
   expect(results).toEqual([{ id: 1, name: "Laptop", price: 999 }]);
 });
 ```
-
----
-
-## **Comparison with Alternatives**
-
-| Feature             | `useSearch` | `react-search` | `fuse.js` |
-| ------------------- | ----------- | -------------- | --------- |
-| Zero dependencies   | ✅          | ❌             | ❌        |
-| Fuzzy search        | ✅          | ❌             | ✅        |
-| Custom search logic | ✅          | ❌             | ❌        |
 
 ---
 
