@@ -1,0 +1,64 @@
+{
+  "name": "usesearch",
+  "version": "1.0.0",
+  "description": "A modular, extensible search and filter hook for React.",
+  "author": "Spruce Emmanuel",
+  "license": "MIT",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.cjs.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "tsc && rollup -c",
+    "watch": "tsc -w",
+    "test": "jest",
+    "test:watch": "jest --watchAll",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@testing-library/react-hooks": "^8.0.1",
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.2.0",
+    "@types/jest": "^29.5.14",
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.7.3",
+    "rollup": "^4.0.2",
+    "rollup-plugin-typescript2": "^0.35.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/usesearch.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/usesearch/issues"
+  },
+  "homepage": "https://github.com/yourusername/usesearch#readme",
+  "keywords": [
+    "react",
+    "search",
+    "filter",
+    "useSearch",
+    "react-hooks"
+  ]
+}
