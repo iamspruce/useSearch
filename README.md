@@ -741,7 +741,9 @@ const results = useSearch(
   products,
   query,
   search({ fields: ["name"] }),
-  filter({ "price", ">", 20 }) // Only show products above $500
+  filter({
+    conditions: [{ field: "price", operator: "lessThan", value: 500 }],
+  }) // Only show products less than $500
 );
 ```
 
