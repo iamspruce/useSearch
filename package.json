@@ -1,6 +1,6 @@
 {
   "name": "use-search-react",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A modular, extensible search and filter hook for React.",
   "author": "Spruce Emmanuel",
   "license": "MIT",
