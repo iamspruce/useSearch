@@ -65,9 +65,9 @@ Whether you're building an interactive search UI or just need a solid search too
 Getting started is simple! Install `useSearch` using npm or yarn:
 
 ```bash
-npm install use-search-hook
+npm install use-search-react
 # or
-yarn add use-search-hook
+yarn add use-search-react
 ```
 
 Once installed, you’re ready to plug it into your project.
@@ -81,7 +81,7 @@ Once installed, you’re ready to plug it into your project.
 Search an array of objects with debouncing (default: 150ms):
 
 ```tsx
-import { useSearch, search } from "use-search-hook";
+import { useSearch, search } from "use-search-react";
 
 const ProductList = ({ products }) => {
   const [query, setQuery] = useState("");
@@ -283,7 +283,7 @@ You can **choose the right algorithm** based on your use case, or even provide *
 Apply conditional logic to refine results:
 
 ```ts
-import { filter } from "use-search-hook";
+import { filter } from "use-search-react";
 
 filter({
   conditions: [
@@ -342,10 +342,6 @@ The hook gracefully handles edge cases:
 - Invalid `data` → Returns empty array + console warning
 - Non-string `query` → Throws error
 - Missing features → Returns original data
-
----
-
-Here’s the updated API documentation with the new features included in the same conversational and structured style:
 
 ---
 
@@ -565,44 +561,151 @@ This ensures that the search only updates after the user **stops typing for 300m
 
 ## **TypeScript Support**
 
-`useSearch` is fully typed and supports generics for seamless integration with TypeScript.
+`useSearch` is fully typed and supports generics, ensuring seamless TypeScript integration with strong type inference. Using generics allows you to define the structure of your data, providing better IntelliSense and preventing runtime errors.
+
+### **Example Usage with TypeScript**
 
 ```ts
 interface Product {
   id: string;
   name: string;
   price: number;
+  category: string;
 }
 
-const results = useSearch<Product>(products, query, search({ ... }));
+const results = useSearch<Product>(
+  products,
+  query,
+  search({ fields: ["name", "category"] })
+);
 ```
+
+By specifying `<Product>`, TypeScript ensures that `results` is strictly an array of `Product` objects, improving developer experience and preventing common mistakes.
+
+### **Type Safety with Search Features**
+
+If you're using additional search features such as filters or sorting, TypeScript will enforce correct property access.
+
+```ts
+const features = [
+  search({ fields: ["name", "category"] }),
+  filter({ category: "Electronics" }),
+];
+
+const results = useSearch<Product>(products, query, ...features);
+```
+
+This prevents typos in field names and ensures that only valid properties of `Product` are used.
 
 ---
 
 ## **Performance Tips**
 
-- Use `paginate()` to limit the number of rendered items.
-- Avoid deeply nested fields in `search()` for faster lookups.
-- Memoize the `features` array to prevent unnecessary re-renders.
+When working with large datasets, optimizing search operations is crucial. Below are some best practices to keep `useSearch` efficient and responsive:
+
+### **1. Use `paginate()` for Large Data Sets**
+
+Limiting the number of rendered items helps prevent performance bottlenecks. Instead of displaying all search results at once, you can use pagination:
+
+```ts
+const paginatedResults = paginate(results, { limit: 10, offset: 0 });
+```
+
+This ensures that only a subset of results is rendered at a time, improving UI responsiveness.
+
+### **2. Avoid Deeply Nested Fields**
+
+Searching through deeply nested objects increases lookup complexity. Instead of this:
+
+```ts
+const results = useSearch(
+  products,
+  query,
+  search({ fields: ["details.specs.name"] })
+);
+```
+
+Consider flattening the data beforehand:
+
+```ts
+const flattenedProducts = products.map(({ details, ...rest }) => ({
+  ...rest,
+  specsName: details.specs.name,
+}));
+
+const results = useSearch(
+  flattenedProducts,
+  query,
+  search({ fields: ["specsName"] })
+);
+```
+
+This leads to faster lookups and avoids deep property resolution overhead.
+
+### **3. Memoize the `features` Array**
+
+Since arrays are reference types, passing a new `features` array on every render causes unnecessary recalculations. Memoizing it prevents this:
+
+```ts
+const features = useMemo(() => [search({ fields: ["name", "category"] })], []);
+const results = useSearch<Product>(products, query, ...features);
+```
 
 ---
 
 ## **Testing**
 
-### Mocking `useSearch`
+Writing reliable tests ensures that `useSearch` behaves as expected across different scenarios.
+
+### **Mocking `useSearch` in Unit Tests**
+
+Mocking `useSearch` allows you to isolate it in unit tests, ensuring that your components don’t depend on external state changes:
 
 ```ts
-jest.mock("use-search", () => ({
+jest.mock("useSearch", () => ({
   useSearch: jest.fn(() => mockResults),
 }));
 ```
 
-### Example Test Case
+### **Example Test Case**
 
 ```ts
 test("filters products by name", () => {
+  const products = [
+    { id: "1", name: "Laptop", price: 999 },
+    { id: "2", name: "Phone", price: 499 },
+  ];
+
   const results = useSearch(products, "laptop", search({ fields: ["name"] }));
-  expect(results).toEqual([{ id: 1, name: "Laptop", price: 999 }]);
+
+  expect(results).toEqual([{ id: "1", name: "Laptop", price: 999 }]);
+});
+```
+
+This verifies that the search function correctly filters the dataset based on the query.
+
+### **Testing Performance with Large Data Sets**
+
+If your app handles thousands of items, it’s good to test how efficiently `useSearch` scales:
+
+```ts
+test("handles large datasets efficiently", () => {
+  const largeDataset = Array.from({ length: 10000 }, (_, i) => ({
+    id: `${i}`,
+    name: `Product ${i}`,
+    price: Math.random() * 1000,
+  }));
+
+  const startTime = performance.now();
+  const results = useSearch(
+    largeDataset,
+    "Product 999",
+    search({ fields: ["name"] })
+  );
+  const endTime = performance.now();
+
+  expect(results.length).toBeGreaterThan(0);
+  expect(endTime - startTime).toBeLessThan(50); // Ensure search runs within 50ms
 });
 ```
 
@@ -610,20 +713,45 @@ test("filters products by name", () => {
 
 ## **FAQ**
 
-### Can I use `useSearch` with non-array data?
+### **Can I use `useSearch` with non-array data?**
 
-Yes! `useSearch` accepts both arrays and single objects.
+Yes! `useSearch` supports both arrays and single objects. If a single object is passed, it’s automatically wrapped in an array internally.
 
-### How do I customize the debounce time?
+```ts
+const singleProduct = { id: "1", name: "Laptop", price: 999 };
+const results = useSearch(singleProduct, query, search({ fields: ["name"] }));
+```
 
-Pass the debounce time (in milliseconds) as the third argument to `useSearch`.
+### **How do I customize the debounce time?**
+
+To reduce unnecessary recalculations on every keystroke, you can pass a debounce delay (in milliseconds) as the fourth argument:
+
+```ts
+const results = useSearch(products, query, 300, search({ fields: ["name"] }));
+```
+
+In this case, the search operation will be debounced by **300ms**, reducing performance strain on frequent input changes.
+
+### **Can I combine `useSearch` with filters?**
+
+Absolutely! `useSearch` works well with additional filtering and sorting logic.
+
+```ts
+const results = useSearch(
+  products,
+  query,
+  search({ fields: ["name"] }),
+  filter({ "price", ">", 20 }) // Only show products above $500
+);
+```
 
 ---
 
 ## **Roadmap**
 
-- [x] Add grouping functionality.
-- [x] Improve TypeScript type inference.
+- ✅ Added grouping functionality.
+- ✅ Improved TypeScript type inference.
+- ⏳ Add more algorithms for fuzzy searchin
 
 ---
 
